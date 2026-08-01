@@ -956,6 +956,39 @@ static char *uh_handle_alias(char *old_url)
 	return old_url;
 }
 
+/*
+ * Handlers registered with .check_url (ubus, lua, ucode) are dispatched straight
+ * from uh_handle_request(), which never reaches __handle_file_request() - the only
+ * caller of uh_auth_check(). An auth realm covering such a prefix would therefore
+ * never be enforced. Evaluate the realm here, on the same URL the dispatcher
+ * matched, before handing the request to the plugin.
+ */
+static bool
+uh_dispatch_auth_check(struct client *cl, const char *url)
+{
+	static const struct blobmsg_policy hdr_policy[] = {
+		{ "authorization", BLOBMSG_TYPE_STRING },
+	};
+	struct blob_attr *tb[ARRAY_SIZE(hdr_policy)];
+	char *user, *pass;
+	const char *auth;
+
+	blobmsg_parse(hdr_policy, ARRAY_SIZE(hdr_policy), tb,
+		      blob_data(cl->hdr.head), blob_len(cl->hdr.head));
+
+	auth = tb[0] ? blobmsg_data(tb[0]) : NULL;
+
+	if (!uh_auth_check(cl, url, auth, &user, &pass))
+		return false;
+
+	if (user && pass) {
+		blobmsg_add_string(&cl->hdr, "http-auth-user", user);
+		blobmsg_add_string(&cl->hdr, "http-auth-pass", pass);
+	}
+
+	return true;
+}
+
 void uh_handle_request(struct client *cl)
 {
 	struct http_request *req = &cl->request;
@@ -976,8 +1009,12 @@ void uh_handle_request(struct client *cl)
 
 	req->redirect_status = 200;
 	d = dispatch_find(url, NULL);
-	if (d)
+	if (d) {
+		if (!uh_dispatch_auth_check(cl, url))
+			return;
+
 		return uh_invoke_handler(cl, d, url, NULL);
+	}
 
 	if (__handle_file_request(cl, url, false))
 		return;
