@@ -673,8 +673,12 @@ static void uh_ubus_send_list(struct client *cl, struct blob_attr *params)
 		{
 			rem = blobmsg_data_len(dup);
 			data.verbose = true;
-			__blob_for_each_attr(cur, blobmsg_data(dup), rem)
+			__blob_for_each_attr(cur, blobmsg_data(dup), rem) {
+				if (blobmsg_type(cur) != BLOBMSG_TYPE_STRING)
+					continue;
+
 				ubus_lookup(ctx, blobmsg_data(cur), uh_ubus_list_cb, &data);
+			}
 			free(dup);
 		}
 		blobmsg_close_table(data.buf, r);
