@@ -972,6 +972,7 @@ static void uh_ubus_handle_request(struct client *cl, char *url, struct path_inf
 		chr[0] = '\0';
 
 	du->legacy = false;
+	d->free = uh_ubus_request_free;
 
 	switch (cl->request.method)
 	{
@@ -982,7 +983,6 @@ static void uh_ubus_handle_request(struct client *cl, char *url, struct path_inf
 		d->data_send = uh_ubus_data_send;
 		d->data_done = uh_ubus_handle_post;
 		d->close_fds = uh_ubus_close_fds;
-		d->free = uh_ubus_request_free;
 		du->jstok = json_tokener_new();
 		return;
 
