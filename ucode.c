@@ -124,16 +124,24 @@ uh_ucode_send(uc_vm_t *vm, size_t nargs)
 		val = uc_fn_arg(arridx);
 
 		if (ucv_type(val) == UC_STRING) {
-			len += write(STDOUT_FILENO, ucv_string_get(val), ucv_string_length(val));
+			len += fwrite(ucv_string_get(val), 1, ucv_string_length(val), stdout);
 		}
 		else if (val != NULL) {
 			p = ucv_to_string(vm, val);
-			len += p ? write(STDOUT_FILENO, p, strlen(p)) : 0;
+			len += p ? fwrite(p, 1, strlen(p), stdout) : 0;
 			free(p);
 		}
 	}
 
 	return ucv_int64_new(len);
+}
+
+static uc_value_t *
+uh_ucode_flush(uc_vm_t *vm, size_t nargs)
+{
+	fflush(stdout);
+
+	return NULL;
 }
 
 static uc_value_t *
@@ -243,6 +251,7 @@ uh_ucode_state_init(struct ucode_prefix *ucode)
 	ucv_object_add(v, "urldecode", ucv_cfunction_new("urldecode", uh_ucode_urldecode));
 	ucv_object_add(v, "urlencode", ucv_cfunction_new("urlencode", uh_ucode_urlencode));
 	ucv_object_add(v, "docroot", ucv_string_new(conf.docroot));
+	ucv_object_add(v, "flush", ucv_cfunction_new("flush", uh_ucode_flush));
 
 	ucv_object_add(uc_vm_scope_get(vm), "uhttpd", v);
 
@@ -326,6 +335,8 @@ ucode_main(struct client *cl, struct path_info *pi, char *url)
 	struct env_var *var;
 	char *str;
 	int rem;
+
+	setvbuf(stdout, NULL, _IOFBF, 8192);
 
 	/* new env table for this request */
 	req = ucv_object_new(vm);

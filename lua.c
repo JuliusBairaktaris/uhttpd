@@ -97,10 +97,17 @@ static int uh_lua_send(lua_State *L)
 
 	buf = luaL_checklstring(L, 1, &len);
 	if (len > 0)
-		len = write(STDOUT_FILENO, buf, len);
+		fwrite(buf, 1, len, stdout);
 
 	lua_pushnumber(L, len);
 	return 1;
+}
+
+static int uh_lua_flush(lua_State *L)
+{
+	fflush(stdout);
+
+	return 0;
 }
 
 static int
@@ -170,6 +177,9 @@ static lua_State *uh_lua_state_init(struct lua_prefix *lua)
 	lua_pushstring(L, conf.docroot);
 	lua_setfield(L, -2, "docroot");
 
+	lua_pushcfunction(L, uh_lua_flush);
+	lua_setfield(L, -2, "flush");
+
 	lua_setglobal(L, "uhttpd");
 
 	ret = luaL_loadfile(L, lua->handler);
@@ -214,6 +224,8 @@ static void lua_main(struct client *cl, struct path_info *pi, char *url)
 	int path_len, prefix_len;
 	char *str;
 	int rem;
+
+	setvbuf(stdout, NULL, _IOFBF, 8192);
 
 	lua_getglobal(L, UH_LUA_CB);
 
