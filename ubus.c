@@ -570,6 +570,10 @@ static void uh_ubus_send_request(struct client *cl, const char *sid, struct blob
 	int ret, rem;
 
 	blob_buf_init(&req, 0);
+
+	if (args && blobmsg_type(args) != BLOBMSG_TYPE_TABLE)
+		return uh_ubus_json_rpc_error(cl, ERROR_PARAMS);
+
 	blobmsg_for_each_attr(cur, args, rem) {
 		if (!strcmp(blobmsg_name(cur), "ubus_rpc_session"))
 			return uh_ubus_json_rpc_error(cl, ERROR_PARAMS);
