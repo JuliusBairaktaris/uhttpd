@@ -123,10 +123,20 @@ static void uh_poll_connection(struct client *cl)
 
 void uh_request_done(struct client *cl)
 {
+	struct http_request *r = &cl->request;
+
 	uh_chunk_eof(cl);
 	uh_dispatch_done(cl);
 	blob_buf_init(&cl->hdr_response, 0);
 	memset(&cl->dispatch, 0, sizeof(cl->dispatch));
+
+	/* Close the connection even when keep alive is set, when it
+	 * contains a request body, as it was not read and we are
+	 * currently out of sync. Without handling this the body will be
+	 * interpreted as part of the next request.
+	 */
+	if (r->transfer_chunked || r->content_length > 0)
+		cl->request.connection_close = true;
 
 	if (!conf.http_keepalive || cl->request.connection_close)
 		return uh_connection_close(cl);
@@ -139,7 +149,6 @@ void uh_request_done(struct client *cl)
 void __printf(4, 5)
 uh_client_error(struct client *cl, int code, const char *summary, const char *fmt, ...)
 {
-	struct http_request *r = &cl->request;
 	va_list arg;
 
 	uh_http_header(cl, code, summary);
@@ -152,15 +161,6 @@ uh_client_error(struct client *cl, int code, const char *summary, const char *fm
 		uh_chunk_vprintf(cl, fmt, arg);
 		va_end(arg);
 	}
-
-	/* Close the connection even when keep alive is set, when it
-	 * contains a request body, as it was not read and we are
-	 * currently out of sync. Without handling this the body will be
-	 * interpreted as part of the next request. The alternative
-	 * would be to read and discard the request body here.
-	 */
-	if (r->transfer_chunked || r->content_length > 0)
-		cl->request.connection_close = true;
 
 	uh_request_done(cl);
 }
