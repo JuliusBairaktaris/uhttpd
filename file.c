@@ -281,7 +281,19 @@ uh_path_lookup(struct client *cl, const char *url)
 static const char * uh_file_mime_lookup(const char *path)
 {
 	const struct mimetype *m = &uh_mime_types[0];
+	char link[PATH_MAX];
+	struct stat st;
 	const char *e;
+	ssize_t len;
+
+	if (!lstat(path, &st) && S_ISLNK(st.st_mode)) {
+		len = readlink(path, link, sizeof(link) - 1);
+
+		if (len > 0) {
+			link[len] = 0;
+			path = link;
+		}
+	}
 
 	while (m->extn) {
 		e = &path[strlen(path)-1];
@@ -635,7 +647,7 @@ static void uh_file_data(struct client *cl, struct path_info *pi, int fd)
 	uh_file_response_200(cl, &pi->stat);
 
 	ustream_printf(cl->us, "Content-Type: %s\r\n",
-			   uh_file_mime_lookup(pi->name));
+			   uh_file_mime_lookup(pi->phys));
 
 	ustream_printf(cl->us, "Content-Length: %" PRIu64 "\r\n\r\n",
 			   pi->stat.st_size);
