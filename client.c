@@ -435,7 +435,7 @@ static void client_parse_header(struct client *cl, char *data, size_t line_len)
 		return;
 	}
 
-	val = uh_split_header(data);
+	val = uh_split_header(data, line_len - 2);
 	if (!val) {
 		cl->state = CLIENT_STATE_DONE;
 		return;

@@ -94,7 +94,7 @@ int uh_urldecode(char *buf, int blen, const char *src, int slen);
 int uh_urlencode(char *buf, int blen, const char *src, int slen);
 int uh_b64decode(char *buf, int blen, const void *src, int slen);
 bool uh_path_match(const char *prefix, const char *url);
-char *uh_split_header(char *str);
+char *uh_split_header(char *str, size_t len);
 bool uh_addr_rfc1918(struct uh_addr *addr);
 char *uh_htmlescape(const char *src);
 

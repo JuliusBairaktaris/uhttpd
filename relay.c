@@ -98,7 +98,7 @@ static void relay_process_headers(struct relay *r)
 			break;
 		}
 
-		val = uh_split_header(buf);
+		val = uh_split_header(buf, newline - buf);
 		if (!val) {
 			relay_error(r);
 			return;

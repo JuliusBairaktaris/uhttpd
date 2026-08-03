@@ -245,19 +245,24 @@ bool uh_path_match(const char *prefix, const char *url)
 	return url[len] == '/' || url[len] == '?' || url[len] == 0;
 }
 
-char *uh_split_header(char *str)
+char *uh_split_header(char *str, size_t len)
 {
-	char *val;
+	char *val, *end;
 
-	val = strchr(str, ':');
+	val = memchr(str, ':', len);
+
 	if (!val)
 		return NULL;
 
-	*val = 0;
-	val++;
+	*val++ = 0;
 
 	while (chartypes[(uint8_t)*val] & CT_WSP)
 		val++;
+
+	for (end = str + len - 1; end > val && (chartypes[(uint8_t)*end] & CT_WSP); end--)
+		;
+
+	*(end + 1) = 0;
 
 	return val;
 }
