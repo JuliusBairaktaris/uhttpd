@@ -140,7 +140,8 @@ static int usage(const char *name)
 		"	-C file         ASN.1 server certificate file\n"
 		"	-K file         ASN.1 server private key file\n"
 		"	-P ciphers      Colon separated list of allowed TLS ciphers\n"
-		"	-q              Redirect all HTTP requests to HTTPS\n"
+		"\t-q              Redirect all HTTP requests to HTTPS\n"
+		"\t-Q host=url     Redirect requests by SNI hostname to URL, -Q may be repeated\n"
 #endif
 		"	-h directory    Specify the document root, default is '.'\n"
 		"	-E string       Use given virtual URL as 404 error handler\n"
@@ -196,6 +197,7 @@ static void init_defaults_pre(void)
 #if HAVE_UCODE
 	INIT_LIST_HEAD(&conf.ucode_prefix);
 #endif
+	INIT_LIST_HEAD(&conf.sni_redirect);
 }
 
 static void init_defaults_post(void)
@@ -293,7 +295,7 @@ int main(int argc, char **argv)
 	init_defaults_pre();
 	signal(SIGPIPE, SIG_IGN);
 
-	while ((ch = getopt(argc, argv, "A:ab:C:c:Dd:E:e:fh:H:I:i:K:k:L:l:m:N:n:O:o:P:p:qRr:Ss:T:t:U:u:Xx:y:")) != -1) {
+	while ((ch = getopt(argc, argv, "A:ab:C:c:Dd:E:e:fh:H:I:i:K:k:L:l:m:N:n:O:o:P:p:qQ:Rr:Ss:T:t:U:u:Xx:y:")) != -1) {
 		switch(ch) {
 #ifdef HAVE_TLS
 		case 'C':
@@ -312,6 +314,10 @@ int main(int argc, char **argv)
 			conf.tls_redirect = 1;
 			break;
 
+		case 'Q':
+			uh_sni_redirect_add(optarg);
+			break;
+
 		case 's':
 			n_tls++;
 			/* fall through */
@@ -320,6 +326,7 @@ int main(int argc, char **argv)
 		case 'K':
 		case 'P':
 		case 'q':
+		case 'Q':
 		case 's':
 			fprintf(stderr, "uhttpd: TLS support not compiled, "
 			                "ignoring -%c\n", ch);

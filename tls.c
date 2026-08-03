@@ -106,3 +106,35 @@ void uh_tls_client_detach(struct client *cl)
 {
 	ustream_free(&cl->ssl.stream);
 }
+
+void uh_sni_redirect_add(const char *spec)
+{
+	struct sni_redirect *r;
+	char *h, *u, *sep;
+
+	sep = strchr(spec, '=');
+	if (!sep)
+		return;
+
+	*sep = 0;
+
+	h = strdup(spec);
+	u = strdup(sep + 1);
+
+	if (!h || !u)
+		goto free;
+
+	r = calloc(1, sizeof(*r));
+	if (!r)
+		goto free;
+
+	r->host = h;
+	r->url = u;
+	list_add_tail(&r->list, &conf.sni_redirect);
+
+	return;
+
+free:
+	free(h);
+	free(u);
+}

@@ -25,6 +25,7 @@
 int uh_tls_init(const char *key, const char *crt, const char *ciphers);
 void uh_tls_client_attach(struct client *cl);
 void uh_tls_client_detach(struct client *cl);
+void uh_sni_redirect_add(const char *spec);
 
 #else
 
@@ -38,6 +39,10 @@ static inline void uh_tls_client_attach(struct client *cl)
 }
 
 static inline void uh_tls_client_detach(struct client *cl)
+{
+}
+
+static inline void uh_sni_redirect_add(const char *spec)
 {
 }
 

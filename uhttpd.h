@@ -106,6 +106,13 @@ struct config {
 #ifdef HAVE_UCODE
 	struct list_head ucode_prefix;
 #endif
+	struct list_head sni_redirect;
+};
+
+struct sni_redirect {
+	struct list_head list;
+	const char *host;
+	const char *url;
 };
 
 struct auth_realm {

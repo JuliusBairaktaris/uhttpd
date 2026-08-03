@@ -328,6 +328,29 @@ static bool tls_redirect_check(struct client *cl)
 	return false;
 }
 
+static bool sni_redirect_check(struct client *cl)
+{
+	struct sni_redirect *r;
+
+	if (!cl->tls || !cl->ssl.server_name)
+		return true;
+
+	list_for_each_entry(r, &conf.sni_redirect, list) {
+		if (!strcmp(cl->ssl.server_name, r->host)) {
+			cl->request.disable_chunked = true;
+			cl->request.connection_close = true;
+
+			uh_http_header(cl, 301, "Moved Permanently");
+			ustream_printf(cl->us, "Location: %s\r\n\r\n", r->url);
+			uh_request_done(cl);
+
+			return false;
+		}
+	}
+
+	return true;
+}
+
 static void client_header_complete(struct client *cl)
 {
 	struct http_request *r = &cl->request;
@@ -339,6 +362,9 @@ static void client_header_complete(struct client *cl)
 		return;
 
 	if (!tls_redirect_check(cl))
+		return;
+
+	if (!sni_redirect_check(cl))
 		return;
 
 	if (r->expect_cont)
