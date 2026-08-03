@@ -410,6 +410,7 @@ static void uh_ubus_handle_get_subscribe(struct client *cl, const char *path)
 	/* Ensure cleanup on client disconnect */
 	cl->dispatch.free = uh_ubus_subscription_free;
 
+	uh_client_unref(cl);
 	return;
 
 err_unregister:
